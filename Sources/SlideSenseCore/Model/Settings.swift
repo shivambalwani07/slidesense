@@ -26,6 +26,19 @@ public enum EdgeAction: String, Codable, CaseIterable, Sendable, Identifiable {
     }
 }
 
+public enum BottomEdgeAction: String, Codable, CaseIterable, Sendable, Identifiable {
+    case tracks
+    case screenshot
+
+    public var id: String { rawValue }
+    public var label: String {
+        switch self {
+        case .tracks: return "Skip Tracks"
+        case .screenshot: return "Screenshot to Clipboard"
+        }
+    }
+}
+
 public enum ModifierRequirement: String, Codable, CaseIterable, Sendable, Identifiable {
     case none
     case fn
@@ -104,6 +117,7 @@ public struct Settings: Codable, Equatable, Sendable {
 
     // Extras
     public var quickMuteEnabled: Bool = true
+    public var bottomEdgeAction: BottomEdgeAction = .tracks
     public var mediaStripEnabled: Bool = true
     public var mediaStripReverse: Bool = false
     public var tapToPlayEnabled: Bool = false
@@ -140,6 +154,7 @@ public struct Settings: Codable, Equatable, Sendable {
         hapticsEnabled = try c.decodeIfPresent(Bool.self, forKey: .hapticsEnabled) ?? d.hapticsEnabled
         hapticStrength = try c.decodeIfPresent(HapticStrength.self, forKey: .hapticStrength) ?? d.hapticStrength
         quickMuteEnabled = try c.decodeIfPresent(Bool.self, forKey: .quickMuteEnabled) ?? d.quickMuteEnabled
+        bottomEdgeAction = try c.decodeIfPresent(BottomEdgeAction.self, forKey: .bottomEdgeAction) ?? d.bottomEdgeAction
         mediaStripEnabled = try c.decodeIfPresent(Bool.self, forKey: .mediaStripEnabled) ?? d.mediaStripEnabled
         mediaStripReverse = try c.decodeIfPresent(Bool.self, forKey: .mediaStripReverse) ?? d.mediaStripReverse
         tapToPlayEnabled = try c.decodeIfPresent(Bool.self, forKey: .tapToPlayEnabled) ?? d.tapToPlayEnabled

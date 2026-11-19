@@ -8,6 +8,7 @@ private final class Recorder: SlideEngineDelegate {
     var ends: [(EdgeAction, Double)] = []
     var ticks: [(EdgeAction, Double)] = []
     var commands: [MediaCommand] = []
+    var tickDirections: [Bool] = []
 
     func slideEngine(_ engine: SlideEngine, didBeginSlide target: EdgeAction) {
         begins.append(target)
@@ -21,8 +22,9 @@ private final class Recorder: SlideEngineDelegate {
         ends.append((target, level))
     }
 
-    func slideEngine(_ engine: SlideEngine, didTick target: EdgeAction, level: Double) {
+    func slideEngine(_ engine: SlideEngine, didTick target: EdgeAction, level: Double, increasing: Bool) {
         ticks.append((target, level))
+        tickDirections.append(increasing)
     }
 
     func slideEngine(_ engine: SlideEngine, didRecognize command: MediaCommand) {
@@ -226,6 +228,43 @@ final class SlideEngineTests: XCTestCase {
             XCTAssertEqual(recorder.updates.count, count, ending)
             XCTAssertEqual(recorder.ends.count, 1, ending)
             XCTAssertFalse(engine.isTrackingSlide, ending)
+        }
+    }
+
+    func testScreenshotSwipeEmitsOnceInEitherDirection() {
+        for end in [0.25, 0.75] {
+            let (engine, recorder) = makeEngine { $0.bottomEdgeAction = .screenshot }
+            engine.process(frame(at: 0, x: 0.5, y: 0.05))
+            engine.process(frame(at: 0.02, x: end, y: 0.05))
+            engine.process(frame(at: 0.04, x: end, y: 0.05))
+            XCTAssertEqual(recorder.commands, [.screenshot])
+        }
+    }
+
+    func testScreenshotModeDoesNotPlayOnDoubleTap() {
+        let (engine, recorder) = makeEngine {
+            $0.bottomEdgeAction = .screenshot
+            $0.tapToPlayEnabled = true
+        }
+        for base in [0.0, 0.2] {
+            engine.process(frame(at: base, x: 0.5, y: 0.05))
+            engine.process(frame(at: base + 0.05, x: 0.5, y: 0.05, touching: false))
+        }
+        XCTAssertTrue(recorder.commands.isEmpty)
+    }
+
+    func testSlideTicksReportDirectionChanges() {
+        let (engine, recorder) = makeEngine()
+        engine.process(frame(at: 0, x: 0.95, y: 0.3))
+        engine.process(frame(at: 0.02, x: 0.95, y: 0.5))
+        engine.process(frame(at: 0.04, x: 0.95, y: 0.4))
+        XCTAssertEqual(recorder.tickDirections, [true, false])
+    }
+
+    func testSlideHapticPatternsDifferByDirection() {
+        for strength in HapticStrength.allCases {
+            XCTAssertNotEqual(Haptics.slidePattern(strength, increasing: true),
+                              Haptics.slidePattern(strength, increasing: false))
         }
     }
 

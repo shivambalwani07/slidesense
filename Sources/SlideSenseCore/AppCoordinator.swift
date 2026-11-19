@@ -128,6 +128,8 @@ public final class AppCoordinator: NSObject, StatusItemDataSource {
 
     // MARK: - Touch pipeline
 
+    private var lastVolumeStep = 0
+
     private func handle(_ frame: TouchFrame) {
         // A slide starts from the live system level. Levels are cached and kept
         // fresh by the CoreAudio/DisplayServices callbacks, but re-read once when
@@ -176,6 +178,7 @@ public final class AppCoordinator: NSObject, StatusItemDataSource {
         new.sensitivity = settings.sensitivity
         new.currentBrightness = brightness.level
         new.currentVolume = audio.level
+        new.bottomEdgeAction = settings.bottomEdgeAction
         new.mediaStripEnabled = settings.mediaStripEnabled
         new.mediaStripReverse = settings.mediaStripReverse
         new.quickMuteEnabled = settings.quickMuteEnabled
@@ -211,9 +214,7 @@ public final class AppCoordinator: NSObject, StatusItemDataSource {
             engine.reset()
         }
 
-        if settings.mediaStripEnabled {
-            promptForAccessibilityIfNeeded()
-        }
+        promptForAccessibilityIfNeeded()
 
         if lastLoginItemPreference != settings.openAtLogin {
             lastLoginItemPreference = settings.openAtLogin
@@ -227,7 +228,7 @@ public final class AppCoordinator: NSObject, StatusItemDataSource {
     private var didPromptForAccessibility = false
 
     private func promptForAccessibilityIfNeeded() {
-        guard store.settings.mediaStripEnabled, !AccessibilityPermission.isTrusted else { return }
+        guard store.settings.enabled, !AccessibilityPermission.isTrusted else { return }
         guard !didPromptForAccessibility else { return }
         didPromptForAccessibility = true
         AccessibilityPermission.requestIfNeeded()
@@ -383,7 +384,12 @@ extension AppCoordinator: SlideEngineDelegate {
     public func slideEngine(_ engine: SlideEngine, didBeginSlide target: EdgeAction) {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            self.hud.show(edge: target, level: self.level(for: target), muted: self.audio.isMuted)
+            if target == .volume {
+                self.audio.refresh()
+                self.lastVolumeStep = Int((self.audio.level * 64).rounded())
+            } else {
+                self.hud.show(edge: target, level: self.level(for: target), muted: false)
+            }
         }
     }
 
@@ -392,8 +398,9 @@ extension AppCoordinator: SlideEngineDelegate {
             guard let self else { return }
             switch target {
             case .volume:
-                self.audio.setLevel(level)
-                self.hud.show(edge: .volume, level: self.audio.level, muted: self.audio.isMuted)
+                let step = Int((level * 64).rounded())
+                MediaKeyController.shared.adjustVolume(quarterSteps: step - self.lastVolumeStep)
+                self.lastVolumeStep = step
             case .brightness:
                 self.brightness.setLevel(level)
                 self.hud.show(edge: .brightness, level: self.brightness.level, muted: false)
@@ -408,15 +415,17 @@ extension AppCoordinator: SlideEngineDelegate {
         }
     }
 
-    public func slideEngine(_ engine: SlideEngine, didTick target: EdgeAction, level: Double) {
+    public func slideEngine(_ engine: SlideEngine, didTick target: EdgeAction, level: Double, increasing: Bool) {
         guard hapticsEnabled else { return }
-        Haptics.shared.tick(hapticStrength)
+        Haptics.shared.slideTick(hapticStrength, increasing: increasing)
     }
 
     public func slideEngine(_ engine: SlideEngine, didRecognize command: MediaCommand) {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             switch command {
+            case .screenshot:
+                MediaKeyController.shared.copyScreenshot()
             case .playPause:
                 MediaKeyController.shared.send(.playPause)
                 self.hud.showMedia(.playPause)
@@ -427,11 +436,10 @@ extension AppCoordinator: SlideEngineDelegate {
                 MediaKeyController.shared.send(.previous)
                 self.hud.showMedia(.previous)
             case .mute:
-                self.audio.toggleMute()
+                MediaKeyController.shared.send(.mute)
                 if self.hapticsEnabled {
                     Haptics.shared.buzz(self.hapticStrength)
                 }
-                self.hud.show(edge: .volume, level: self.audio.level, muted: self.audio.isMuted)
                 self.statusItem?.refresh()
             }
         }

@@ -222,17 +222,28 @@ struct SettingsTabContent: View {
             }
 
             Section {
-                Toggle("Show Media Strip", isOn: $store.settings.mediaStripEnabled)
+                Toggle("Enable Bottom Edge", isOn: $store.settings.mediaStripEnabled)
                     .toggleStyle(.switch)
-                Toggle("Reverse Swipe", isOn: $store.settings.mediaStripReverse)
-                    .toggleStyle(.switch)
-                    .disabled(!store.settings.mediaStripEnabled)
-                Toggle("Tap to Play/Pause", isOn: $store.settings.tapToPlayEnabled)
-                    .toggleStyle(.switch)
+                Picker("Action", selection: $store.settings.bottomEdgeAction) {
+                    ForEach(BottomEdgeAction.allCases) { action in
+                        Text(action.label).tag(action)
+                    }
+                }
+                .disabled(!store.settings.mediaStripEnabled)
+                if store.settings.bottomEdgeAction == .tracks {
+                    Toggle("Reverse Swipe", isOn: $store.settings.mediaStripReverse)
+                        .toggleStyle(.switch)
+                        .disabled(!store.settings.mediaStripEnabled)
+                    Toggle("Tap to Play/Pause", isOn: $store.settings.tapToPlayEnabled)
+                        .toggleStyle(.switch)
+                        .disabled(!store.settings.mediaStripEnabled)
+                }
             } header: {
-                Text("Media Strip")
+                Text("Bottom Edge")
             } footer: {
-                Text("Swipe along the bottom edge to skip tracks; double-tap to play or pause.")
+                Text(store.settings.bottomEdgeAction == .tracks
+                     ? "Swipe along the bottom edge to skip tracks; double-tap to play or pause."
+                     : "Swipe either direction along the bottom edge to capture the full screen to the clipboard. Requires the standard macOS screenshot shortcut.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -309,7 +320,7 @@ struct SettingsTabContent: View {
             } header: {
                 Text("Permissions")
             } footer: {
-                Text("Accessibility access lets SlideSense send the media keys used by the bottom-edge media strip. Volume and brightness work without it.")
+                Text("Accessibility access enables native volume controls, media keys, and screenshot shortcuts. Brightness control works without it.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

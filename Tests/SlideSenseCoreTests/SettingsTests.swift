@@ -12,6 +12,7 @@ final class SettingsTests: XCTestCase {
         settings.hapticsEnabled = false
         settings.hapticStrength = .strong
         settings.mediaStripReverse = true
+        settings.bottomEdgeAction = .screenshot
         settings.appearance = .dark
 
         let data = try JSONEncoder().encode(settings)
@@ -26,6 +27,7 @@ final class SettingsTests: XCTestCase {
         let decoded = try JSONDecoder().decode(Settings.self, from: Data(json.utf8))
         let defaults = Settings()
 
+        XCTAssertEqual(decoded.bottomEdgeAction, .tracks)
         XCTAssertEqual(decoded.edgeWidth, 0.3)
         XCTAssertEqual(decoded.leftEdge, defaults.leftEdge)
         XCTAssertEqual(decoded.rightEdge, defaults.rightEdge)

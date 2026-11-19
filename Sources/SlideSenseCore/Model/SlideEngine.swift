@@ -10,6 +10,7 @@ public struct EngineConfiguration: Equatable, Sendable {
     public var sensitivity: Double = 1.0
     public var currentBrightness: Double = 0.5
     public var currentVolume: Double = 0.5
+    public var bottomEdgeAction: BottomEdgeAction = .tracks
     public var mediaStripEnabled: Bool = true
     public var mediaStripReverse: Bool = false
     public var quickMuteEnabled: Bool = true
@@ -23,6 +24,7 @@ public struct EngineConfiguration: Equatable, Sendable {
 
 /// Things the engine can ask the app to do.
 public enum MediaCommand: Sendable, Equatable {
+    case screenshot
     case playPause
     case next
     case previous
@@ -34,7 +36,7 @@ public protocol SlideEngineDelegate: AnyObject {
     func slideEngine(_ engine: SlideEngine, didUpdateSlide target: EdgeAction, level: Double)
     func slideEngine(_ engine: SlideEngine, didEndSlide target: EdgeAction, level: Double)
     /// Fired once every time the level crosses a haptic step.
-    func slideEngine(_ engine: SlideEngine, didTick target: EdgeAction, level: Double)
+    func slideEngine(_ engine: SlideEngine, didTick target: EdgeAction, level: Double, increasing: Bool)
     func slideEngine(_ engine: SlideEngine, didRecognize command: MediaCommand)
 }
 
@@ -240,8 +242,8 @@ public final class SlideEngine {
 
             let step = Int((snapped * steps).rounded())
             if step != gesture.lastStep {
+                delegate?.slideEngine(self, didTick: target, level: snapped, increasing: step > gesture.lastStep)
                 gesture.lastStep = step
-                delegate?.slideEngine(self, didTick: target, level: snapped)
             }
 
         case .media:
@@ -249,6 +251,10 @@ public final class SlideEngine {
             if abs(dx) > 0.02 { gesture.moved = true }
             guard abs(dx) > 0.12, !gesture.consumed else { return }
             gesture.consumed = true
+            if config.bottomEdgeAction == .screenshot {
+                delegate?.slideEngine(self, didRecognize: .screenshot)
+                return
+            }
             // Swiping left means "forward" on the media strip.
             var forward = dx < 0
             if config.mediaStripReverse { forward.toggle() }
@@ -271,7 +277,7 @@ public final class SlideEngine {
             }
 
         case .media:
-            if isTap, config.tapToPlayEnabled {
+            if isTap, config.bottomEdgeAction == .tracks, config.tapToPlayEnabled {
                 if now - lastMediaTap < 0.45 {
                     lastMediaTap = -10
                     delegate?.slideEngine(self, didRecognize: .playPause)

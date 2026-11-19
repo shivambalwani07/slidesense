@@ -44,13 +44,35 @@ public final class MediaKeyController {
         }
     }
 
+    /// Uses the system screenshot shortcut so macOS owns capture and clipboard handling.
+    public func copyScreenshot() {
+        guard AccessibilityPermission.isTrusted,
+              let down = CGEvent(keyboardEventSource: nil, virtualKey: 20, keyDown: true),
+              let up = CGEvent(keyboardEventSource: nil, virtualKey: 20, keyDown: false) else { return }
+        for event in [down, up] {
+            event.flags = [.maskCommand, .maskShift, .maskControl]
+            event.post(tap: .cghidEventTap)
+        }
+    }
+
+    /// Quarter steps preserve precise sliding while letting macOS show its native HUD.
+    public func adjustVolume(quarterSteps: Int) {
+        guard AccessibilityPermission.isTrusted else { return }
+        let key: Key = quarterSteps > 0 ? .soundUp : .soundDown
+        for _ in 0..<abs(min(max(quarterSteps, -64), 64)) {
+            post(key: key, down: true, fine: true)
+            post(key: key, down: false, fine: true)
+        }
+    }
+
     private func press(_ key: Key) {
         post(key: key, down: true)
         post(key: key, down: false)
     }
 
-    private func post(key: Key, down: Bool) {
-        let flags = NSEvent.ModifierFlags(rawValue: 0xa00) // fn + numeric pad
+    private func post(key: Key, down: Bool, fine: Bool = false) {
+        var flags = NSEvent.ModifierFlags(rawValue: 0xa00) // fn + numeric pad
+        if fine { flags.formUnion([.shift, .option]) }
         let state: Int = down ? 0xA : 0xB
         let data1 = Int(key.rawValue << 16) | (state << 8)
         guard

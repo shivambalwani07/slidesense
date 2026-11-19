@@ -20,6 +20,19 @@ public final class Haptics {
         performer.perform(pattern, performanceTime: .now)
     }
 
+    // AppKit offers fixed patterns, not directional force or adjustable intensity.
+    static func slidePattern(_ strength: HapticStrength, increasing: Bool) -> NSHapticFeedbackManager.FeedbackPattern {
+        switch (strength, increasing) {
+        case (.light, true), (.medium, false): return .alignment
+        case (.strong, true): return .levelChange
+        default: return .generic
+        }
+    }
+
+    public func slideTick(_ strength: HapticStrength, increasing: Bool) {
+        performer.perform(Self.slidePattern(strength, increasing: increasing), performanceTime: .now)
+    }
+
     /// A heavier buzz, used for mute.
     public func buzz(_ strength: HapticStrength) {
         tick(.strong)
