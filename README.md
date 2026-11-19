@@ -283,6 +283,6 @@ MIT — see [LICENSE](LICENSE).
 
 Volume slides adjust the selected sound output through CoreAudio and show the SlideSense volume display. Volume control works for Bluetooth devices that expose adjustable volume through CoreAudio. Outputs with fixed volume cannot be adjusted by SlideSense.
 
-In Settings → Extras → Bottom Edge, choose **Screenshot to Clipboard**, then swipe either direction along the bottom band. One screenshot is requested per swipe using the standard Control-Shift-Command-3 shortcut; custom or disabled macOS screenshot shortcuts must be restored for this action.
+In Settings → Extras → Bottom Edge, choose **Full-Screen Screenshot**, then swipe either direction along the bottom band. Each swipe saves a full-screen screenshot and copies it to the clipboard, with a screen flash, shutter sound, and a clickable bottom-right preview. Save To follows the current macOS Screenshot folder by default; Choose Folder overrides it, and Use macOS Location restores the default. Screen Recording access is required. With multiple displays, macOS saves each display and the primary display image is copied and previewed.
 
 Side and bottom-edge slide haptics use different AppKit patterns for increasing and decreasing levels, with a short second pulse for a more pronounced vibration. These are distinct ticks, not physical upward or downward force.

@@ -44,17 +44,6 @@ public final class MediaKeyController {
         }
     }
 
-    /// Uses the system screenshot shortcut so macOS owns capture and clipboard handling.
-    public func copyScreenshot() {
-        guard AccessibilityPermission.isTrusted,
-              let down = CGEvent(keyboardEventSource: nil, virtualKey: 20, keyDown: true),
-              let up = CGEvent(keyboardEventSource: nil, virtualKey: 20, keyDown: false) else { return }
-        for event in [down, up] {
-            event.flags = [.maskCommand, .maskShift, .maskControl]
-            event.post(tap: .cghidEventTap)
-        }
-    }
-
     private func press(_ key: Key) {
         post(key: key, down: true)
         post(key: key, down: false)

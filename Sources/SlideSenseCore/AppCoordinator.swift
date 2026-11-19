@@ -10,6 +10,7 @@ public final class AppCoordinator: NSObject, StatusItemDataSource {
     private let brightness = BrightnessController.shared
     private let hud: HUDController
     private let freezer = CursorFreezer()
+    private let screenshots = ScreenshotController()
 
     private var statusItem: StatusItemController!
     private var settingsWindow: SettingsWindowController!
@@ -422,7 +423,7 @@ extension AppCoordinator: SlideEngineDelegate {
             guard let self else { return }
             switch command {
             case .screenshot:
-                MediaKeyController.shared.copyScreenshot()
+                self.screenshots.capture(customFolder: self.store.settings.screenshotFolder)
             case .playPause:
                 MediaKeyController.shared.send(.playPause)
                 self.hud.showMedia(.playPause)

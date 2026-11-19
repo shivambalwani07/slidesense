@@ -237,13 +237,35 @@ struct SettingsTabContent: View {
                     Toggle("Tap to Play/Pause", isOn: $store.settings.tapToPlayEnabled)
                         .toggleStyle(.switch)
                         .disabled(!store.settings.mediaStripEnabled)
+                } else {
+                    LabeledContent("Save To", value: store.settings.screenshotFolder ?? "macOS Screenshot Location")
+                    Text(ScreenshotController.folderURL(customPath: store.settings.screenshotFolder).path)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                    HStack {
+                        Button("Choose Folder…") {
+                            let picker = NSOpenPanel()
+                            picker.canChooseFiles = false
+                            picker.canChooseDirectories = true
+                            picker.canCreateDirectories = true
+                            picker.directoryURL = ScreenshotController.folderURL(customPath: store.settings.screenshotFolder)
+                            if picker.runModal() == .OK, let url = picker.url {
+                                store.settings.screenshotFolder = url.path
+                            }
+                        }
+                        if store.settings.screenshotFolder != nil {
+                            Button("Use macOS Location") { store.settings.screenshotFolder = nil }
+                        }
+                    }
+                    .disabled(!store.settings.mediaStripEnabled)
                 }
             } header: {
                 Text("Bottom Edge")
             } footer: {
                 Text(store.settings.bottomEdgeAction == .tracks
                      ? "Swipe along the bottom edge to skip tracks; double-tap to play or pause."
-                     : "Swipe either direction along the bottom edge to capture the full screen to the clipboard. Requires the standard macOS screenshot shortcut.")
+                     : "Swipe either direction to save a full-screen screenshot and copy it to the clipboard, with a flash, shutter sound, and preview. Screen Recording access is required.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -320,7 +342,7 @@ struct SettingsTabContent: View {
             } header: {
                 Text("Permissions")
             } footer: {
-                Text("Accessibility access enables media keys and screenshot shortcuts. Volume and brightness control work without it.")
+                Text("Accessibility access enables media keys. Screenshots require Screen Recording access. Volume and brightness control work without it.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
