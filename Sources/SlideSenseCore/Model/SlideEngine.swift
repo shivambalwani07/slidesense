@@ -24,7 +24,7 @@ public struct EngineConfiguration: Equatable, Sendable {
 
 /// Things the engine can ask the app to do.
 public enum MediaCommand: Sendable, Equatable {
-    case screenshot
+    case shortcut
     case playPause
     case next
     case previous
@@ -196,7 +196,7 @@ public final class SlideEngine {
         case let .slider(_, edge, _): inside = geometry.edge(at: point) == edge
         case .media:
             // Keep a bottom swipe through corners and small upward drift, but not into the center.
-            inside = (0...1).contains(point.x) && (0...geometry.edgeWidth + 0.03).contains(point.y)
+            inside = (0...1).contains(point.x) && (0...geometry.bottomEdgeWidth + 0.03).contains(point.y)
         case .corner: inside = geometry.isQuickMuteCorner(point) || geometry.edge(at: point) == .right
         case .ignored: return
         }
@@ -259,8 +259,8 @@ public final class SlideEngine {
             }
             guard abs(dx) > 0.10, !gesture.consumed else { return }
             gesture.consumed = true
-            if config.bottomEdgeAction == .screenshot {
-                delegate?.slideEngine(self, didRecognize: .screenshot)
+            if config.bottomEdgeAction == .shortcut {
+                delegate?.slideEngine(self, didRecognize: .shortcut)
                 return
             }
             // Swiping left means "forward" on the media strip.

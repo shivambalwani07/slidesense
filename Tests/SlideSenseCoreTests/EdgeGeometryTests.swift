@@ -37,4 +37,11 @@ final class EdgeGeometryTests: XCTestCase {
         XCTAssertNil(geometry.edge(at: CGPoint(x: -0.2, y: 0.5)))
         XCTAssertNil(geometry.edge(at: CGPoint(x: 0.5, y: 1.4)))
     }
+    func testNarrowSideEdgesKeepUsableBottomBand() {
+        let geometry = EdgeGeometry(edgeWidth: 0.05)
+        XCTAssertEqual(geometry.edge(at: CGPoint(x: 0.5, y: 0.08)), .bottom)
+        XCTAssertNil(geometry.edge(at: CGPoint(x: 0.08, y: 0.5)))
+        XCTAssertNil(geometry.edge(at: CGPoint(x: 0.5, y: 0.15)))
+    }
+
 }

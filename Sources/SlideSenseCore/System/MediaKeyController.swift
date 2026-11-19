@@ -44,6 +44,28 @@ public final class MediaKeyController {
         }
     }
 
+    public func sendShortcut(_ shortcut: ShortcutConfiguration) {
+        guard shortcut.isValid, AccessibilityPermission.requestIfNeeded() else { return }
+        for event in Self.shortcutEvents(shortcut) {
+            event.post(tap: .cghidEventTap)
+        }
+    }
+
+    static func shortcutEvents(_ shortcut: ShortcutConfiguration) -> [CGEvent] {
+        guard shortcut.isValid,
+              let down = CGEvent(keyboardEventSource: nil, virtualKey: shortcut.keyCode, keyDown: true),
+              let up = CGEvent(keyboardEventSource: nil, virtualKey: shortcut.keyCode, keyDown: false) else { return [] }
+        var flags: CGEventFlags = []
+        if shortcut.command { flags.insert(.maskCommand) }
+        if shortcut.shift { flags.insert(.maskShift) }
+        if shortcut.option { flags.insert(.maskAlternate) }
+        if shortcut.control { flags.insert(.maskControl) }
+        for event in [down, up] {
+            event.flags = flags
+        }
+        return [down, up]
+    }
+
     private func press(_ key: Key) {
         post(key: key, down: true)
         post(key: key, down: false)

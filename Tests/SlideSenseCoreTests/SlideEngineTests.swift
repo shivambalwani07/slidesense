@@ -236,19 +236,19 @@ final class SlideEngineTests: XCTestCase {
         }
     }
 
-    func testScreenshotSwipeEmitsOnceInEitherDirection() {
+    func testShortcutSwipeEmitsOnceInEitherDirection() {
         for end in [0.25, 0.75] {
-            let (engine, recorder) = makeEngine { $0.bottomEdgeAction = .screenshot }
+            let (engine, recorder) = makeEngine { $0.bottomEdgeAction = .shortcut }
             engine.process(frame(at: 0, x: 0.5, y: 0.05))
             engine.process(frame(at: 0.02, x: end, y: 0.05))
             engine.process(frame(at: 0.04, x: end, y: 0.05))
-            XCTAssertEqual(recorder.commands, [.screenshot])
+            XCTAssertEqual(recorder.commands, [.shortcut])
         }
     }
 
-    func testScreenshotModeDoesNotPlayOnDoubleTap() {
+    func testShortcutModeDoesNotPlayOnDoubleTap() {
         let (engine, recorder) = makeEngine {
-            $0.bottomEdgeAction = .screenshot
+            $0.bottomEdgeAction = .shortcut
             $0.tapToPlayEnabled = true
         }
         for base in [0.0, 0.2] {
@@ -313,6 +313,17 @@ final class SlideEngineTests: XCTestCase {
                                  x: index.isMultiple(of: 2) ? 0.559 : 0.561, y: 0.05))
         }
         XCTAssertEqual(recorder.bottomTickDirections, [true])
+    }
+
+    func testMiddleBottomSwipeWithNarrowSideBands() {
+        let (engine, recorder) = makeEngine {
+            $0.edgeWidth = 0.05
+            $0.bottomEdgeAction = .shortcut
+        }
+        engine.process(frame(at: 0, x: 0.5, y: 0.08))
+        engine.process(frame(at: 0.02, x: 0.62, y: 0.09))
+        engine.process(frame(at: 0.04, x: 0.75, y: 0.08))
+        XCTAssertEqual(recorder.commands, [.shortcut])
     }
 
 }

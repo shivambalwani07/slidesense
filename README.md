@@ -30,7 +30,7 @@ matching on-screen display, quick mute, and a media strip along the bottom edge.
 | **Require a modifier** | Demand FN, Option or Control before an edge responds. |
 | **Cursor freeze** | The pointer stays put and hidden while you slide. |
 | **Quick Mute** | Double-tap the top-right corner. |
-| **Bottom edge** | Choose track skipping (with optional double-tap play/pause) or a full-screen screenshot copied to the clipboard. |
+| **Bottom edge** | Choose track skipping (with optional double-tap play/pause) or a custom keyboard shortcut. |
 | **Swap sides** | Brightness on the right if you prefer. |
 | **Menu bar only** | No Dock icon. Idle CPU is effectively zero. |
 | **Open at login** | Via `SMAppService`, no helper daemon. |
@@ -279,10 +279,10 @@ Security issues: please email rather than opening a public issue, see
 
 MIT — see [LICENSE](LICENSE).
 
-### Volume and bottom-edge screenshots
+### Volume and bottom-edge shortcuts
 
 Volume slides adjust the selected sound output through CoreAudio and show the SlideSense volume display. Volume control works for Bluetooth devices that expose adjustable volume through CoreAudio. Outputs with fixed volume cannot be adjusted by SlideSense.
 
-In Settings → Extras → Bottom Edge, choose **Full-Screen Screenshot**, then swipe either direction along the bottom band. Each swipe saves a full-screen screenshot and copies it to the clipboard, with a screen flash, shutter sound, and a clickable bottom-right preview. Save To follows the current macOS Screenshot folder by default; Choose Folder overrides it, and Use macOS Location restores the default. Screen Recording access is required. With multiple displays, macOS saves each display and the primary display image is copied and previewed.
+In Settings → Extras → Bottom Edge, choose **Keyboard Shortcut** and configure the key and modifiers. The default is **⌘⇧3**, which asks macOS to take a native full-screen screenshot with its own sound and thumbnail (when enabled). Add Control for clipboard capture instead. Use **⌘⇧5 → Options** to choose the save location and floating-thumbnail behavior. Accessibility access is required to send shortcuts; SlideSense no longer requests Screen Recording access or captures images itself. Old screenshot-action settings automatically use the native shortcut; the old SlideSense save-folder override is ignored.
 
-Side and bottom-edge slide haptics use different AppKit patterns for increasing and decreasing levels. Side slides add a short second pulse; bottom swipes use spaced single pulses to avoid overlapping feedback. These are distinct ticks, not physical upward or downward force.
+The bottom band is at least 10% of the trackpad height, even with narrower side edges. Side and bottom-edge slide haptics use different AppKit patterns for increasing and decreasing levels. Side slides add a short second pulse; bottom swipes use spaced single pulses to avoid overlapping feedback. These are distinct ticks, not physical upward or downward force.

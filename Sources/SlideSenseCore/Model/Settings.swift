@@ -28,13 +28,13 @@ public enum EdgeAction: String, Codable, CaseIterable, Sendable, Identifiable {
 
 public enum BottomEdgeAction: String, Codable, CaseIterable, Sendable, Identifiable {
     case tracks
-    case screenshot
+    case shortcut = "screenshot" // Preserve the previously saved screenshot action.
 
     public var id: String { rawValue }
     public var label: String {
         switch self {
         case .tracks: return "Skip Tracks"
-        case .screenshot: return "Full-Screen Screenshot"
+        case .shortcut: return "Keyboard Shortcut"
         }
     }
 }
@@ -118,8 +118,7 @@ public struct Settings: Codable, Equatable, Sendable {
     // Extras
     public var quickMuteEnabled: Bool = true
     public var bottomEdgeAction: BottomEdgeAction = .tracks
-    /// Nil follows the screenshot folder configured in macOS.
-    public var screenshotFolder: String? = nil
+    public var bottomShortcut = ShortcutConfiguration()
     public var mediaStripEnabled: Bool = true
     public var mediaStripReverse: Bool = false
     public var tapToPlayEnabled: Bool = false
@@ -156,7 +155,7 @@ public struct Settings: Codable, Equatable, Sendable {
         hapticsEnabled = try c.decodeIfPresent(Bool.self, forKey: .hapticsEnabled) ?? d.hapticsEnabled
         hapticStrength = try c.decodeIfPresent(HapticStrength.self, forKey: .hapticStrength) ?? d.hapticStrength
         quickMuteEnabled = try c.decodeIfPresent(Bool.self, forKey: .quickMuteEnabled) ?? d.quickMuteEnabled
-        screenshotFolder = try c.decodeIfPresent(String.self, forKey: .screenshotFolder)
+        bottomShortcut = try c.decodeIfPresent(ShortcutConfiguration.self, forKey: .bottomShortcut) ?? d.bottomShortcut
         bottomEdgeAction = try c.decodeIfPresent(BottomEdgeAction.self, forKey: .bottomEdgeAction) ?? d.bottomEdgeAction
         mediaStripEnabled = try c.decodeIfPresent(Bool.self, forKey: .mediaStripEnabled) ?? d.mediaStripEnabled
         mediaStripReverse = try c.decodeIfPresent(Bool.self, forKey: .mediaStripReverse) ?? d.mediaStripReverse

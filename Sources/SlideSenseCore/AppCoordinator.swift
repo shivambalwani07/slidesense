@@ -10,7 +10,6 @@ public final class AppCoordinator: NSObject, StatusItemDataSource {
     private let brightness = BrightnessController.shared
     private let hud: HUDController
     private let freezer = CursorFreezer()
-    private let screenshots = ScreenshotController()
 
     private var statusItem: StatusItemController!
     private var settingsWindow: SettingsWindowController!
@@ -422,8 +421,8 @@ extension AppCoordinator: SlideEngineDelegate {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             switch command {
-            case .screenshot:
-                self.screenshots.capture(customFolder: self.store.settings.screenshotFolder)
+            case .shortcut:
+                MediaKeyController.shared.sendShortcut(self.store.settings.bottomShortcut)
             case .playPause:
                 MediaKeyController.shared.send(.playPause)
                 self.hud.showMedia(.playPause)

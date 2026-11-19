@@ -12,8 +12,8 @@ final class SettingsTests: XCTestCase {
         settings.hapticsEnabled = false
         settings.hapticStrength = .strong
         settings.mediaStripReverse = true
-        settings.bottomEdgeAction = .screenshot
-        settings.screenshotFolder = "/tmp/My Screenshots"
+        settings.bottomEdgeAction = .shortcut
+        settings.bottomShortcut.control = true
         settings.appearance = .dark
 
         let data = try JSONEncoder().encode(settings)
@@ -28,7 +28,7 @@ final class SettingsTests: XCTestCase {
         let decoded = try JSONDecoder().decode(Settings.self, from: Data(json.utf8))
         let defaults = Settings()
 
-        XCTAssertNil(decoded.screenshotFolder)
+        XCTAssertEqual(decoded.bottomShortcut, ShortcutConfiguration())
         XCTAssertEqual(decoded.bottomEdgeAction, .tracks)
         XCTAssertEqual(decoded.edgeWidth, 0.3)
         XCTAssertEqual(decoded.leftEdge, defaults.leftEdge)

@@ -238,34 +238,34 @@ struct SettingsTabContent: View {
                         .toggleStyle(.switch)
                         .disabled(!store.settings.mediaStripEnabled)
                 } else {
-                    LabeledContent("Save To", value: store.settings.screenshotFolder ?? "macOS Screenshot Location")
-                    Text(ScreenshotController.folderURL(customPath: store.settings.screenshotFolder).path)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                    HStack {
-                        Button("Choose Folder…") {
-                            let picker = NSOpenPanel()
-                            picker.canChooseFiles = false
-                            picker.canChooseDirectories = true
-                            picker.canCreateDirectories = true
-                            picker.directoryURL = ScreenshotController.folderURL(customPath: store.settings.screenshotFolder)
-                            if picker.runModal() == .OK, let url = picker.url {
-                                store.settings.screenshotFolder = url.path
-                            }
-                        }
-                        if store.settings.screenshotFolder != nil {
-                            Button("Use macOS Location") { store.settings.screenshotFolder = nil }
+                    Picker("Key", selection: $store.settings.bottomShortcut.keyCode) {
+                        ForEach(ShortcutConfiguration.keys, id: \.code) { key in
+                            Text(key.label).tag(key.code)
                         }
                     }
-                    .disabled(!store.settings.mediaStripEnabled)
+                    HStack {
+                        Toggle("⌘ Command", isOn: $store.settings.bottomShortcut.command)
+                        Toggle("⇧ Shift", isOn: $store.settings.bottomShortcut.shift)
+                    }
+                    .toggleStyle(.checkbox)
+                    HStack {
+                        Toggle("⌥ Option", isOn: $store.settings.bottomShortcut.option)
+                        Toggle("⌃ Control", isOn: $store.settings.bottomShortcut.control)
+                    }
+                    .toggleStyle(.checkbox)
+                    if !store.settings.bottomShortcut.isValid {
+                        Text("Choose a key and at least one modifier.").foregroundStyle(.red)
+                    }
+                    Button("Use Full-Screen Screenshot Shortcut") {
+                        store.settings.bottomShortcut = ShortcutConfiguration()
+                    }
                 }
             } header: {
                 Text("Bottom Edge")
             } footer: {
                 Text(store.settings.bottomEdgeAction == .tracks
                      ? "Swipe along the bottom edge to skip tracks; double-tap to play or pause."
-                     : "Swipe either direction to save a full-screen screenshot and copy it to the clipboard, with a flash, shutter sound, and preview. Screen Recording access is required.")
+                     : "Swipe either direction to send your shortcut once. Default: ⌘⇧3 for a native screenshot. Add Control to copy to the clipboard instead. Use macOS Screenshot (⌘⇧5) to choose the save location and floating thumbnail.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -342,7 +342,7 @@ struct SettingsTabContent: View {
             } header: {
                 Text("Permissions")
             } footer: {
-                Text("Accessibility access enables media keys. Screenshots require Screen Recording access. Volume and brightness control work without it.")
+                Text("Accessibility access enables media keys and custom keyboard shortcuts. Volume and brightness control work without it.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

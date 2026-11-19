@@ -35,6 +35,9 @@ public struct EdgeGeometry: Sendable {
         self.init(edgeWidth: settings.edgeWidth, bottomQuarterOnly: settings.bottomQuarterOnly)
     }
 
+    /// Keep horizontal swipes usable even when the side bands are very narrow.
+    public var bottomEdgeWidth: Double { max(edgeWidth, 0.10) }
+
     /// Which edge, if any, the point is close enough to.
     ///
     /// When a point sits in a corner the closest edge wins, so the bottom
@@ -47,7 +50,7 @@ public struct EdgeGeometry: Sendable {
         var candidates: [(edge: Edge, distance: Double)] = []
         if x <= edgeWidth { candidates.append((.left, x)) }
         if x >= 1 - edgeWidth { candidates.append((.right, 1 - x)) }
-        if y <= edgeWidth { candidates.append((.bottom, y)) }
+        if y <= bottomEdgeWidth { candidates.append((.bottom, y)) }
 
         guard let best = candidates.min(by: { $0.distance < $1.distance }) else { return nil }
 
