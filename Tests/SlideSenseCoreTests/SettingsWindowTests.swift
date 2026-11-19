@@ -98,7 +98,7 @@ final class SettingsWindowTests: XCTestCase {
             controller.selectTab(tab)
             XCTAssertEqual(controller.selectedTab, tab)
         }
-        XCTAssertEqual(SettingsTab.allCases.map(\.title), ["Edges", "Feel", "Media", "Startup", "General"])
+        XCTAssertEqual(SettingsTab.allCases.map(\.title), ["Edges", "Feel", "Media", "Startup", "General", "Custom"])
     }
 
     // MARK: - Permissions

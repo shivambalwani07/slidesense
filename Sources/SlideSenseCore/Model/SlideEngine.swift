@@ -10,6 +10,7 @@ public struct EngineConfiguration: Equatable, Sendable {
     public var sensitivity: Double = 1.0
     public var currentBrightness: Double = 0.5
     public var currentVolume: Double = 0.5
+    public var customShortcuts: [Edge: DirectionalShortcuts] = [:]
     public var bottomEdgeAction: BottomEdgeAction = .tracks
     public var mediaStripEnabled: Bool = true
     public var mediaStripReverse: Bool = false
@@ -25,6 +26,7 @@ public struct EngineConfiguration: Equatable, Sendable {
 /// Things the engine can ask the app to do.
 public enum MediaCommand: Sendable, Equatable {
     case shortcut
+    case customShortcut(ShortcutConfiguration)
     case playPause
     case next
     case previous
@@ -56,6 +58,7 @@ public final class SlideEngine {
     private enum Kind {
         case slider(target: EdgeAction, edge: Edge, startLevel: Double)
         case media
+        case custom(edge: Edge, shortcuts: DirectionalShortcuts)
         case corner
         case ignored
     }
@@ -87,6 +90,7 @@ public final class SlideEngine {
     public var isTrackingSlide: Bool {
         guard let gesture else { return false }
         if case .slider = gesture.kind { return gesture.moved }
+        if case .custom = gesture.kind { return gesture.moved }
         return false
     }
 
@@ -158,6 +162,11 @@ public final class SlideEngine {
         let geometry = EdgeGeometry(edgeWidth: config.edgeWidth, bottomQuarterOnly: config.bottomQuarterOnly)
         let fine = isFine(config: config)
 
+        if let edge = geometry.edge(at: point), let shortcuts = config.customShortcuts[edge], shortcuts.enabled {
+            gesture = makeGesture(kind: .custom(edge: edge, shortcuts: shortcuts), point: point, now: now, level: 0, fine: fine, config: config)
+            return
+        }
+
         if config.quickMuteEnabled, geometry.isQuickMuteCorner(point) {
             gesture = makeGesture(kind: .corner, point: point, now: now, level: 0, fine: fine, config: config)
             return
@@ -197,6 +206,10 @@ public final class SlideEngine {
         case .media:
             // Keep a bottom swipe through corners and small upward drift, but not into the center.
             inside = (0...1).contains(point.x) && (0...geometry.bottomEdgeWidth + 0.03).contains(point.y)
+        case let .custom(edge, _):
+            inside = config.customShortcuts[edge]?.enabled == true && (edge == .bottom
+                ? (0...1).contains(point.x) && (0...geometry.bottomEdgeWidth + 0.03).contains(point.y)
+                : geometry.edge(at: point) == edge)
         case .corner: inside = geometry.isQuickMuteCorner(point) || geometry.edge(at: point) == .right
         case .ignored: return
         }
@@ -249,6 +262,16 @@ public final class SlideEngine {
                 delegate?.slideEngine(self, didTick: target, level: snapped, increasing: step > gesture.lastStep)
                 gesture.lastStep = step
             }
+
+        case let .custom(edge, shortcuts):
+            let distance = edge == .bottom ? dx : dy
+            if abs(distance) > 0.02 { gesture.moved = true }
+            guard abs(distance) > 0.10, !gesture.consumed else { return }
+            gesture.consumed = true
+            let shortcut = distance > 0 ? shortcuts.positive : shortcuts.negative
+            guard shortcut.isValid else { return }
+            delegate?.slideEngine(self, didTickBottomEdge: distance > 0)
+            delegate?.slideEngine(self, didRecognize: .customShortcut(shortcut))
 
         case .media:
             guard config.mediaStripEnabled else { return }
@@ -304,7 +327,7 @@ public final class SlideEngine {
                 }
             }
 
-        case .ignored:
+        case .custom, .ignored:
             break
         }
     }

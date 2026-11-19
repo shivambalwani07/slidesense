@@ -14,6 +14,10 @@ final class SettingsTests: XCTestCase {
         settings.mediaStripReverse = true
         settings.bottomEdgeAction = .shortcut
         settings.bottomShortcut.control = true
+        var custom = DirectionalShortcuts()
+        custom.enabled = true
+        custom.negative.keyCode = 8
+        settings.customShortcuts[.left] = custom
         settings.appearance = .dark
 
         let data = try JSONEncoder().encode(settings)

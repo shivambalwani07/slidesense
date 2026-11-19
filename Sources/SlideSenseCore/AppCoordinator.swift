@@ -176,6 +176,7 @@ public final class AppCoordinator: NSObject, StatusItemDataSource {
         new.sensitivity = settings.sensitivity
         new.currentBrightness = brightness.level
         new.currentVolume = audio.level
+        new.customShortcuts = settings.customShortcuts
         new.bottomEdgeAction = settings.bottomEdgeAction
         new.mediaStripEnabled = settings.mediaStripEnabled
         new.mediaStripReverse = settings.mediaStripReverse
@@ -226,7 +227,9 @@ public final class AppCoordinator: NSObject, StatusItemDataSource {
     private var didPromptForAccessibility = false
 
     private func promptForAccessibilityIfNeeded() {
-        guard store.settings.enabled, store.settings.mediaStripEnabled, !AccessibilityPermission.isTrusted else { return }
+        guard store.settings.enabled,
+              store.settings.mediaStripEnabled || store.settings.customShortcuts.values.contains(where: { $0.enabled }),
+              !AccessibilityPermission.isTrusted else { return }
         guard !didPromptForAccessibility else { return }
         didPromptForAccessibility = true
         AccessibilityPermission.requestIfNeeded()
@@ -421,6 +424,8 @@ extension AppCoordinator: SlideEngineDelegate {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             switch command {
+            case let .customShortcut(shortcut):
+                MediaKeyController.shared.sendShortcut(shortcut)
             case .shortcut:
                 MediaKeyController.shared.sendShortcut(self.store.settings.bottomShortcut)
             case .playPause:

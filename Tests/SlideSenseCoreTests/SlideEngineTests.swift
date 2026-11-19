@@ -326,4 +326,59 @@ final class SlideEngineTests: XCTestCase {
         XCTAssertEqual(recorder.commands, [.shortcut])
     }
 
+    func testCustomShortcutsForAllEdgesAndDirectionsOncePerTouch() {
+        for edge in Edge.allCases {
+            for direction in [-1.0, 1.0] {
+                var shortcuts = DirectionalShortcuts()
+                shortcuts.enabled = true
+                shortcuts.positive.keyCode = 8
+                shortcuts.negative.keyCode = 9
+                let (engine, recorder) = makeEngine { $0.customShortcuts[edge] = shortcuts }
+                let x = edge == .left ? 0.04 : edge == .right ? 0.96 : 0.5
+                let y = edge == .bottom ? 0.04 : 0.5
+                let endX = edge == .bottom ? x + direction * 0.2 : x
+                let endY = edge == .bottom ? y : y + direction * 0.2
+                engine.process(frame(at: 0, x: x, y: y))
+                engine.process(frame(at: 0.02, x: endX, y: endY))
+                engine.process(frame(at: 0.04, x: endX, y: endY))
+                let expected = MediaCommand.customShortcut(direction > 0 ? shortcuts.positive : shortcuts.negative)
+                XCTAssertEqual(recorder.commands, [expected])
+                XCTAssertTrue(recorder.updates.isEmpty)
+                engine.process(frame(at: 0.06, x: endX, y: endY, touching: false))
+                engine.process(frame(at: 0.08, x: x, y: y))
+                engine.process(frame(at: 0.10, x: endX, y: endY))
+                XCTAssertEqual(recorder.commands, [expected, expected])
+            }
+        }
+    }
+
+    func testDisabledCustomEdgeKeepsVolumeAction() {
+        let (engine, recorder) = makeEngine { $0.customShortcuts[.right] = DirectionalShortcuts() }
+        engine.process(frame(at: 0, x: 0.95, y: 0.3))
+        engine.process(frame(at: 0.02, x: 0.95, y: 0.5))
+        XCTAssertFalse(recorder.updates.isEmpty)
+        XCTAssertTrue(recorder.commands.isEmpty)
+    }
+
+    func testCustomShortcutCancelsOnModifierReleaseAndEdgeExit() {
+        for releaseModifier in [true, false] {
+            var shortcuts = DirectionalShortcuts()
+            shortcuts.enabled = true
+            let (engine, recorder) = makeEngine {
+                $0.customShortcuts[.right] = shortcuts
+                $0.requireModifier = .option
+            }
+            var held: ModifierState = .option
+            engine.modifiers = { held }
+            engine.process(frame(at: 0, x: 0.95, y: 0.3))
+            engine.process(frame(at: 0.02, x: 0.95, y: 0.35))
+            if releaseModifier { held = [] }
+            engine.process(frame(at: 0.04, x: releaseModifier ? 0.95 : 0.5, y: 0.5))
+            held = .option
+            engine.process(frame(at: 0.06, x: 0.95, y: 0.6))
+            XCTAssertTrue(recorder.commands.isEmpty)
+            XCTAssertFalse(engine.isTrackingSlide)
+        }
+    }
+
 }

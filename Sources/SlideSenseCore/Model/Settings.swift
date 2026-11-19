@@ -119,6 +119,7 @@ public struct Settings: Codable, Equatable, Sendable {
     public var quickMuteEnabled: Bool = true
     public var bottomEdgeAction: BottomEdgeAction = .tracks
     public var bottomShortcut = ShortcutConfiguration()
+    public var customShortcuts: [Edge: DirectionalShortcuts] = [:]
     public var mediaStripEnabled: Bool = true
     public var mediaStripReverse: Bool = false
     public var tapToPlayEnabled: Bool = false
@@ -155,6 +156,7 @@ public struct Settings: Codable, Equatable, Sendable {
         hapticsEnabled = try c.decodeIfPresent(Bool.self, forKey: .hapticsEnabled) ?? d.hapticsEnabled
         hapticStrength = try c.decodeIfPresent(HapticStrength.self, forKey: .hapticStrength) ?? d.hapticStrength
         quickMuteEnabled = try c.decodeIfPresent(Bool.self, forKey: .quickMuteEnabled) ?? d.quickMuteEnabled
+        customShortcuts = try c.decodeIfPresent([Edge: DirectionalShortcuts].self, forKey: .customShortcuts) ?? d.customShortcuts
         bottomShortcut = try c.decodeIfPresent(ShortcutConfiguration.self, forKey: .bottomShortcut) ?? d.bottomShortcut
         bottomEdgeAction = try c.decodeIfPresent(BottomEdgeAction.self, forKey: .bottomEdgeAction) ?? d.bottomEdgeAction
         mediaStripEnabled = try c.decodeIfPresent(Bool.self, forKey: .mediaStripEnabled) ?? d.mediaStripEnabled

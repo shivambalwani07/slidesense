@@ -39,4 +39,12 @@ final class ShortcutTests: XCTestCase {
         XCTAssertTrue(MediaKeyController.shortcutEvents(shortcut).isEmpty)
     }
 
+    func testAllPresetsProduceValidEvents() {
+        for preset in ShortcutConfiguration.presets {
+            XCTAssertTrue(preset.shortcut.isValid, preset.name)
+            XCTAssertEqual(MediaKeyController.shortcutEvents(preset.shortcut).count, 2, preset.name)
+        }
+        XCTAssertEqual(ShortcutConfiguration().displayName, "⇧⌘3")
+    }
+
 }

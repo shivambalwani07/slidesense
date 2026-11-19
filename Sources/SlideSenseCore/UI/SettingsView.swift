@@ -36,6 +36,7 @@ public enum SettingsTab: String, CaseIterable, Hashable, Identifiable {
     case extras
     case startup
     case general
+    case custom
 
     public var id: String { rawValue }
 
@@ -44,6 +45,7 @@ public enum SettingsTab: String, CaseIterable, Hashable, Identifiable {
         case .edges: return "Edges"
         case .feel: return "Feel"
         case .extras: return "Media"
+        case .custom: return "Custom"
         case .startup: return "Startup"
         case .general: return "General"
         }
@@ -78,6 +80,10 @@ struct SettingsView: View {
             SettingsTabContent(tab: .general, store: store, permissionState: permissionState)
                 .tabItem { Text(SettingsTab.general.title) }
                 .tag(SettingsTab.general)
+
+            SettingsTabContent(tab: .custom, store: store, permissionState: permissionState)
+                .tabItem { Text(SettingsTab.custom.title) }
+                .tag(SettingsTab.custom)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -91,6 +97,7 @@ struct SettingsTabContent: View {
     @ObservedObject var permissionState: PermissionState
 
     @State private var showRestoreConfirmation = false
+    @State private var customEdge: Edge = .left
 
     var body: some View {
         Group {
@@ -98,6 +105,7 @@ struct SettingsTabContent: View {
             case .edges: edgesForm
             case .feel: feelForm
             case .extras: extrasForm
+            case .custom: customForm
             case .startup: startupForm
             case .general: generalForm
             }
@@ -238,24 +246,7 @@ struct SettingsTabContent: View {
                         .toggleStyle(.switch)
                         .disabled(!store.settings.mediaStripEnabled)
                 } else {
-                    Picker("Key", selection: $store.settings.bottomShortcut.keyCode) {
-                        ForEach(ShortcutConfiguration.keys, id: \.code) { key in
-                            Text(key.label).tag(key.code)
-                        }
-                    }
-                    HStack {
-                        Toggle("⌘ Command", isOn: $store.settings.bottomShortcut.command)
-                        Toggle("⇧ Shift", isOn: $store.settings.bottomShortcut.shift)
-                    }
-                    .toggleStyle(.checkbox)
-                    HStack {
-                        Toggle("⌥ Option", isOn: $store.settings.bottomShortcut.option)
-                        Toggle("⌃ Control", isOn: $store.settings.bottomShortcut.control)
-                    }
-                    .toggleStyle(.checkbox)
-                    if !store.settings.bottomShortcut.isValid {
-                        Text("Choose a key and at least one modifier.").foregroundStyle(.red)
-                    }
+                    ShortcutEditor(shortcut: $store.settings.bottomShortcut)
                     Button("Use Full-Screen Screenshot Shortcut") {
                         store.settings.bottomShortcut = ShortcutConfiguration()
                     }
@@ -269,6 +260,34 @@ struct SettingsTabContent: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
+        }
+        .formStyle(.grouped)
+    }
+
+    private var selectedCustomShortcuts: Binding<DirectionalShortcuts> {
+        Binding(get: { store.settings.customShortcuts[customEdge] ?? DirectionalShortcuts() },
+                set: { store.settings.customShortcuts[customEdge] = $0 })
+    }
+
+    private var customForm: some View {
+        Form {
+            Section {
+                Picker("Edge", selection: $customEdge) {
+                    ForEach(Edge.allCases, id: \.self) { edge in Text(edge.label).tag(edge) }
+                }
+                Toggle("Use Custom Shortcuts", isOn: selectedCustomShortcuts.enabled)
+                    .toggleStyle(.switch)
+            } footer: {
+                Text("Replaces the selected edge’s normal action. Each swipe sends one shortcut; lift your finger before the next swipe. Requires Accessibility access.")
+            }
+            Section(customEdge == .bottom ? "Swipe Right" : "Swipe Up") {
+                ShortcutEditor(shortcut: selectedCustomShortcuts.positive).id(customEdge)
+            }
+            .disabled(!selectedCustomShortcuts.wrappedValue.enabled)
+            Section(customEdge == .bottom ? "Swipe Left" : "Swipe Down") {
+                ShortcutEditor(shortcut: selectedCustomShortcuts.negative).id(customEdge)
+            }
+            .disabled(!selectedCustomShortcuts.wrappedValue.enabled)
         }
         .formStyle(.grouped)
     }
@@ -446,5 +465,84 @@ struct SettingsTabContent: View {
 
     private static var appVersion: String {
         SlideSenseVersion.marketing
+    }
+}
+
+private struct ShortcutEditor: View {
+    @Binding var shortcut: ShortcutConfiguration
+    @State private var eventMonitor: Any?
+    @State private var recordingHint = ""
+    @State private var useCustomAction = false
+
+    var body: some View {
+        Group {
+            Picker("Action", selection: actionSelection) {
+                ForEach(ShortcutConfiguration.presets, id: \.name) { preset in
+                    Text(preset.name).tag(preset.name)
+                }
+                Text("Custom — Record Shortcut").tag("__custom")
+            }
+            LabeledContent("Shortcut", value: shortcut.displayName)
+            if actionSelection.wrappedValue == "__custom" {
+                Button(eventMonitor == nil ? "Record Shortcut" : "Recording… (Esc to Cancel)") {
+                    beginRecording()
+                }
+                if eventMonitor != nil {
+                    Text(recordingHint).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            if !shortcut.isValid {
+                Text("Choose a modifier with a key, or a function key.").foregroundStyle(.red)
+            }
+        }
+        .onDisappear { stopRecording() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
+            stopRecording()
+        }
+    }
+
+    private var actionSelection: Binding<String> {
+        Binding(get: {
+            if useCustomAction { return "__custom" }
+            return ShortcutConfiguration.presets.first { $0.shortcut == shortcut }?.name ?? "__custom"
+        }, set: { action in
+            stopRecording()
+            useCustomAction = action == "__custom"
+            if let preset = ShortcutConfiguration.presets.first(where: { $0.name == action }) {
+                shortcut = preset.shortcut
+            }
+        })
+    }
+
+    private func beginRecording() {
+        stopRecording()
+        recordingHint = "Press your shortcut. For macOS-reserved combinations, choose a preset."
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .leftMouseDown]) { event in
+            if event.type == .leftMouseDown {
+                stopRecording()
+                return event
+            }
+            if event.keyCode == 53 {
+                stopRecording()
+                return nil
+            }
+            guard !event.isARepeat else { return nil }
+            let flags = event.modifierFlags
+            let recorded = ShortcutConfiguration(keyCode: event.keyCode,
+                command: flags.contains(.command), shift: flags.contains(.shift),
+                option: flags.contains(.option), control: flags.contains(.control))
+            guard recorded.isValid else {
+                recordingHint = "Use a modifier with a key, or a function key."
+                return nil
+            }
+            shortcut = recorded
+            stopRecording()
+            return nil
+        }
+    }
+
+    private func stopRecording() {
+        if let eventMonitor { NSEvent.removeMonitor(eventMonitor) }
+        eventMonitor = nil
     }
 }
