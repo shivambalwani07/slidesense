@@ -45,7 +45,7 @@ public final class MediaKeyController {
     }
 
     public func sendShortcut(_ shortcut: ShortcutConfiguration) {
-        guard shortcut.isValid, AccessibilityPermission.requestIfNeeded() else { return }
+        guard shortcut.isValid, AccessibilityPermission.isTrusted else { return }
         for event in Self.shortcutEvents(shortcut) {
             event.post(tap: .cghidEventTap)
         }
