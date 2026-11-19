@@ -9,6 +9,7 @@ private final class Recorder: SlideEngineDelegate {
     var ticks: [(EdgeAction, Double)] = []
     var commands: [MediaCommand] = []
     var tickDirections: [Bool] = []
+    var bottomTickDirections: [Bool] = []
 
     func slideEngine(_ engine: SlideEngine, didBeginSlide target: EdgeAction) {
         begins.append(target)
@@ -25,6 +26,10 @@ private final class Recorder: SlideEngineDelegate {
     func slideEngine(_ engine: SlideEngine, didTick target: EdgeAction, level: Double, increasing: Bool) {
         ticks.append((target, level))
         tickDirections.append(increasing)
+    }
+
+    func slideEngine(_ engine: SlideEngine, didTickBottomEdge increasing: Bool) {
+        bottomTickDirections.append(increasing)
     }
 
     func slideEngine(_ engine: SlideEngine, didRecognize command: MediaCommand) {
@@ -265,6 +270,19 @@ final class SlideEngineTests: XCTestCase {
         for strength in HapticStrength.allCases {
             XCTAssertNotEqual(Haptics.slidePattern(strength, increasing: true),
                               Haptics.slidePattern(strength, increasing: false))
+        }
+    }
+
+    func testBottomEdgeTicksInBothModesAndDirections() {
+        for action in BottomEdgeAction.allCases {
+            let (engine, recorder) = makeEngine { $0.bottomEdgeAction = action }
+            engine.process(frame(at: 0, x: 0.5, y: 0.05))
+            engine.process(frame(at: 0.01, x: 0.51, y: 0.05))
+            XCTAssertTrue(recorder.bottomTickDirections.isEmpty)
+            engine.process(frame(at: 0.02, x: 0.57, y: 0.05))
+            engine.process(frame(at: 0.03, x: 0.58, y: 0.05))
+            engine.process(frame(at: 0.04, x: 0.5, y: 0.05))
+            XCTAssertEqual(recorder.bottomTickDirections, [true, false])
         }
     }
 

@@ -55,24 +55,13 @@ public final class MediaKeyController {
         }
     }
 
-    /// Quarter steps preserve precise sliding while letting macOS show its native HUD.
-    public func adjustVolume(quarterSteps: Int) {
-        guard AccessibilityPermission.isTrusted else { return }
-        let key: Key = quarterSteps > 0 ? .soundUp : .soundDown
-        for _ in 0..<abs(min(max(quarterSteps, -64), 64)) {
-            post(key: key, down: true, fine: true)
-            post(key: key, down: false, fine: true)
-        }
-    }
-
     private func press(_ key: Key) {
         post(key: key, down: true)
         post(key: key, down: false)
     }
 
-    private func post(key: Key, down: Bool, fine: Bool = false) {
-        var flags = NSEvent.ModifierFlags(rawValue: 0xa00) // fn + numeric pad
-        if fine { flags.formUnion([.shift, .option]) }
+    private func post(key: Key, down: Bool) {
+        let flags = NSEvent.ModifierFlags(rawValue: 0xa00) // fn + numeric pad
         let state: Int = down ? 0xA : 0xB
         let data1 = Int(key.rawValue << 16) | (state << 8)
         guard

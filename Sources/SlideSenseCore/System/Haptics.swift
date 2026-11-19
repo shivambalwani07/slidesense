@@ -30,7 +30,12 @@ public final class Haptics {
     }
 
     public func slideTick(_ strength: HapticStrength, increasing: Bool) {
-        performer.perform(Self.slidePattern(strength, increasing: increasing), performanceTime: .now)
+        let pattern = Self.slidePattern(strength, increasing: increasing)
+        performer.perform(pattern, performanceTime: .now)
+        // A short second pulse makes each step more pronounced without changing its direction cue.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) { [performer] in
+            performer.perform(pattern, performanceTime: .now)
+        }
     }
 
     /// A heavier buzz, used for mute.

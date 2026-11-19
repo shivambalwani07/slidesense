@@ -57,7 +57,7 @@ offscreen render).
 - macOS 13 Ventura or later (Liquid Glass appears on macOS 26)
 - A built-in Force Touch trackpad (the one in every MacBook since 2015)
 - Xcode 15+ **or** the Swift 6 toolchain, to build
-- Accessibility permission for native volume, bottom-edge actions, and key-event fallbacks
+- Accessibility permission for bottom-edge actions and key-event fallbacks
 
 Magic Mouse support is not implemented yet — see [Roadmap](#roadmap).
 
@@ -93,8 +93,8 @@ on every rebuild, macOS may ask for Accessibility permission again — that is
 expected.
 
 On first launch macOS shows an Accessibility prompt. Approve it in
-**System Settings → Privacy & Security → Accessibility**. Without it brightness
-control still works; native volume, bottom-edge actions, and key-event fallbacks do not.
+**System Settings → Privacy & Security → Accessibility**. Without it volume and brightness
+control still work; bottom-edge actions and key-event fallbacks do not.
 
 > Gatekeeper: if you download a prebuilt copy, right-click → Open the first time.
 > This project does not ship notarised binaries.
@@ -279,10 +279,10 @@ Security issues: please email rather than opening a public issue, see
 
 MIT — see [LICENSE](LICENSE).
 
-### Native volume and bottom-edge screenshots
+### Volume and bottom-edge screenshots
 
-Volume slides use macOS volume-key events and its native volume display, targeting the selected sound output, including Bluetooth outputs supported by the system volume keys. Accessibility access is required. The app keeps its brightness display. Outputs with fixed volume cannot be adjusted by SlideSense.
+Volume slides adjust the selected sound output through CoreAudio and show the SlideSense volume display. Volume control works for Bluetooth devices that expose adjustable volume through CoreAudio. Outputs with fixed volume cannot be adjusted by SlideSense.
 
 In Settings → Extras → Bottom Edge, choose **Screenshot to Clipboard**, then swipe either direction along the bottom band. One screenshot is requested per swipe using the standard Control-Shift-Command-3 shortcut; custom or disabled macOS screenshot shortcuts must be restored for this action.
 
-Slide haptics use different AppKit patterns for increasing and decreasing levels. These are distinct ticks, not physical upward or downward force.
+Side and bottom-edge slide haptics use different AppKit patterns for increasing and decreasing levels, with a short second pulse for a more pronounced vibration. These are distinct ticks, not physical upward or downward force.

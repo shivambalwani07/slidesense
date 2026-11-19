@@ -128,8 +128,6 @@ public final class AppCoordinator: NSObject, StatusItemDataSource {
 
     // MARK: - Touch pipeline
 
-    private var lastVolumeStep = 0
-
     private func handle(_ frame: TouchFrame) {
         // A slide starts from the live system level. Levels are cached and kept
         // fresh by the CoreAudio/DisplayServices callbacks, but re-read once when
@@ -228,7 +226,7 @@ public final class AppCoordinator: NSObject, StatusItemDataSource {
     private var didPromptForAccessibility = false
 
     private func promptForAccessibilityIfNeeded() {
-        guard store.settings.enabled, !AccessibilityPermission.isTrusted else { return }
+        guard store.settings.enabled, store.settings.mediaStripEnabled, !AccessibilityPermission.isTrusted else { return }
         guard !didPromptForAccessibility else { return }
         didPromptForAccessibility = true
         AccessibilityPermission.requestIfNeeded()
@@ -384,12 +382,7 @@ extension AppCoordinator: SlideEngineDelegate {
     public func slideEngine(_ engine: SlideEngine, didBeginSlide target: EdgeAction) {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            if target == .volume {
-                self.audio.refresh()
-                self.lastVolumeStep = Int((self.audio.level * 64).rounded())
-            } else {
-                self.hud.show(edge: target, level: self.level(for: target), muted: false)
-            }
+            self.hud.show(edge: target, level: self.level(for: target), muted: target == .volume && self.audio.isMuted)
         }
     }
 
@@ -398,9 +391,8 @@ extension AppCoordinator: SlideEngineDelegate {
             guard let self else { return }
             switch target {
             case .volume:
-                let step = Int((level * 64).rounded())
-                MediaKeyController.shared.adjustVolume(quarterSteps: step - self.lastVolumeStep)
-                self.lastVolumeStep = step
+                self.audio.setLevel(level)
+                self.hud.show(edge: .volume, level: self.audio.level, muted: self.audio.isMuted)
             case .brightness:
                 self.brightness.setLevel(level)
                 self.hud.show(edge: .brightness, level: self.brightness.level, muted: false)
@@ -416,6 +408,11 @@ extension AppCoordinator: SlideEngineDelegate {
     }
 
     public func slideEngine(_ engine: SlideEngine, didTick target: EdgeAction, level: Double, increasing: Bool) {
+        guard hapticsEnabled else { return }
+        Haptics.shared.slideTick(hapticStrength, increasing: increasing)
+    }
+
+    public func slideEngine(_ engine: SlideEngine, didTickBottomEdge increasing: Bool) {
         guard hapticsEnabled else { return }
         Haptics.shared.slideTick(hapticStrength, increasing: increasing)
     }
@@ -436,10 +433,11 @@ extension AppCoordinator: SlideEngineDelegate {
                 MediaKeyController.shared.send(.previous)
                 self.hud.showMedia(.previous)
             case .mute:
-                MediaKeyController.shared.send(.mute)
+                self.audio.toggleMute()
                 if self.hapticsEnabled {
                     Haptics.shared.buzz(self.hapticStrength)
                 }
+                self.hud.show(edge: .volume, level: self.audio.level, muted: self.audio.isMuted)
                 self.statusItem?.refresh()
             }
         }

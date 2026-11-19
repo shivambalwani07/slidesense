@@ -320,7 +320,7 @@ struct SettingsTabContent: View {
             } header: {
                 Text("Permissions")
             } footer: {
-                Text("Accessibility access enables native volume controls, media keys, and screenshot shortcuts. Brightness control works without it.")
+                Text("Accessibility access enables media keys and screenshot shortcuts. Volume and brightness control work without it.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

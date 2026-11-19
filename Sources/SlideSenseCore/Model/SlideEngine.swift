@@ -37,6 +37,7 @@ public protocol SlideEngineDelegate: AnyObject {
     func slideEngine(_ engine: SlideEngine, didEndSlide target: EdgeAction, level: Double)
     /// Fired once every time the level crosses a haptic step.
     func slideEngine(_ engine: SlideEngine, didTick target: EdgeAction, level: Double, increasing: Bool)
+    func slideEngine(_ engine: SlideEngine, didTickBottomEdge increasing: Bool)
     func slideEngine(_ engine: SlideEngine, didRecognize command: MediaCommand)
 }
 
@@ -249,6 +250,11 @@ public final class SlideEngine {
         case .media:
             guard config.mediaStripEnabled else { return }
             if abs(dx) > 0.02 { gesture.moved = true }
+            let step = Int((dx / 0.03).rounded(.towardZero))
+            if step != gesture.lastStep {
+                delegate?.slideEngine(self, didTickBottomEdge: step > gesture.lastStep)
+                gesture.lastStep = step
+            }
             guard abs(dx) > 0.12, !gesture.consumed else { return }
             gesture.consumed = true
             if config.bottomEdgeAction == .screenshot {
