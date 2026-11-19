@@ -38,6 +38,11 @@ public final class Haptics {
         }
     }
 
+    /// Single pulses keep horizontal swipes from building up delayed echoes.
+    public func bottomTick(_ strength: HapticStrength, increasing: Bool) {
+        performer.perform(Self.slidePattern(strength, increasing: increasing), performanceTime: .now)
+    }
+
     /// A heavier buzz, used for mute.
     public func buzz(_ strength: HapticStrength) {
         tick(.strong)

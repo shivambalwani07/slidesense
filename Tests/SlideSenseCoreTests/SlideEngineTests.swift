@@ -286,4 +286,33 @@ final class SlideEngineTests: XCTestCase {
         }
     }
 
+    func testBottomSwipeToleratesDriftAndContinuesIntoCorner() {
+        let (engine, recorder) = makeEngine()
+        engine.process(frame(at: 0, x: 0.2, y: 0.17))
+        engine.process(frame(at: 0.02, x: 0.31, y: 0.20))
+        engine.process(frame(at: 0.04, x: 0.95, y: 0.05))
+        XCTAssertEqual(recorder.commands, [.previous])
+        XCTAssertEqual(recorder.bottomTickDirections, [true, true])
+    }
+
+    func testBottomSwipeStillCancelsOutsideBand() {
+        let (engine, recorder) = makeEngine()
+        engine.process(frame(at: 0, x: 0.5, y: 0.15))
+        engine.process(frame(at: 0.02, x: 0.56, y: 0.25))
+        engine.process(frame(at: 0.04, x: 0.75, y: 0.05))
+        XCTAssertTrue(recorder.commands.isEmpty)
+        XCTAssertTrue(recorder.bottomTickDirections.isEmpty)
+    }
+
+    func testBottomHapticsIgnoreJitterAroundOldStepBoundary() {
+        let (engine, recorder) = makeEngine()
+        engine.process(frame(at: 0, x: 0.5, y: 0.05))
+        engine.process(frame(at: 0.01, x: 0.545, y: 0.05))
+        for index in 0..<6 {
+            engine.process(frame(at: 0.02 + Double(index) * 0.01,
+                                 x: index.isMultiple(of: 2) ? 0.559 : 0.561, y: 0.05))
+        }
+        XCTAssertEqual(recorder.bottomTickDirections, [true])
+    }
+
 }

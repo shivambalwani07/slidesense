@@ -415,7 +415,7 @@ extension AppCoordinator: SlideEngineDelegate {
 
     public func slideEngine(_ engine: SlideEngine, didTickBottomEdge increasing: Bool) {
         guard hapticsEnabled else { return }
-        Haptics.shared.slideTick(hapticStrength, increasing: increasing)
+        Haptics.shared.bottomTick(hapticStrength, increasing: increasing)
     }
 
     public func slideEngine(_ engine: SlideEngine, didRecognize command: MediaCommand) {

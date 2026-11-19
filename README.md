@@ -285,4 +285,4 @@ Volume slides adjust the selected sound output through CoreAudio and show the Sl
 
 In Settings → Extras → Bottom Edge, choose **Full-Screen Screenshot**, then swipe either direction along the bottom band. Each swipe saves a full-screen screenshot and copies it to the clipboard, with a screen flash, shutter sound, and a clickable bottom-right preview. Save To follows the current macOS Screenshot folder by default; Choose Folder overrides it, and Use macOS Location restores the default. Screen Recording access is required. With multiple displays, macOS saves each display and the primary display image is copied and previewed.
 
-Side and bottom-edge slide haptics use different AppKit patterns for increasing and decreasing levels, with a short second pulse for a more pronounced vibration. These are distinct ticks, not physical upward or downward force.
+Side and bottom-edge slide haptics use different AppKit patterns for increasing and decreasing levels. Side slides add a short second pulse; bottom swipes use spaced single pulses to avoid overlapping feedback. These are distinct ticks, not physical upward or downward force.

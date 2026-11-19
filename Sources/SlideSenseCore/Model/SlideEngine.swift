@@ -71,6 +71,7 @@ public final class SlideEngine {
         var moved: Bool
         var emittedLevel: Double
         var lastStep: Int
+        var lastTickX: Double
         var consumed: Bool
         var lostFrames: Int
     }
@@ -193,7 +194,9 @@ public final class SlideEngine {
         let inside: Bool
         switch gesture.kind {
         case let .slider(_, edge, _): inside = geometry.edge(at: point) == edge
-        case .media: inside = geometry.edge(at: point) == .bottom
+        case .media:
+            // Keep a bottom swipe through corners and small upward drift, but not into the center.
+            inside = (0...1).contains(point.x) && (0...geometry.edgeWidth + 0.03).contains(point.y)
         case .corner: inside = geometry.isQuickMuteCorner(point) || geometry.edge(at: point) == .right
         case .ignored: return
         }
@@ -250,12 +253,11 @@ public final class SlideEngine {
         case .media:
             guard config.mediaStripEnabled else { return }
             if abs(dx) > 0.02 { gesture.moved = true }
-            let step = Int((dx / 0.03).rounded(.towardZero))
-            if step != gesture.lastStep {
-                delegate?.slideEngine(self, didTickBottomEdge: step > gesture.lastStep)
-                gesture.lastStep = step
+            if abs(point.x - gesture.lastTickX) >= 0.04 {
+                delegate?.slideEngine(self, didTickBottomEdge: point.x > gesture.lastTickX)
+                gesture.lastTickX = point.x
             }
-            guard abs(dx) > 0.12, !gesture.consumed else { return }
+            guard abs(dx) > 0.10, !gesture.consumed else { return }
             gesture.consumed = true
             if config.bottomEdgeAction == .screenshot {
                 delegate?.slideEngine(self, didRecognize: .screenshot)
@@ -335,6 +337,7 @@ public final class SlideEngine {
             moved: false,
             emittedLevel: (level * steps).rounded() / steps,
             lastStep: Int((level * steps).rounded()),
+            lastTickX: point.x,
             consumed: false,
             lostFrames: 0
         )
